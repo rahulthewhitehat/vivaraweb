@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alerts Panel</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .conditional-field { display: none; }
+        .spinner {
+            border: 2px solid rgba(0, 0, 0, 0.1);
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border-left-color: #4f46e5;
+            animation: spin 1s ease infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+
+    <div class="container mx-auto p-4 md:p-8">
+        <header class="mb-8">
+            <h1 class="text-3xl font-bold text-gray-900">Alerts Panel</h1>
+            <p class="text-gray-600 mt-1">Send targeted, high-priority alerts to staff members.</p>
+        </header>
+
+        <div class="max-w-2xl mx-auto bg-white p-6 rounded-lg shadow-md">
+            <h2 class="text-xl font-semibold mb-4 border-b pb-3">Compose New Alert</h2>
+            <form id="sendAlertForm" class="space-y-6">
+                
+                <div>
+                    <label for="sendTo" class="block text-sm font-medium text-gray-700">Send To</label>
+                    <select id="sendTo" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500 sm:text-sm p-2 bg-red-50 font-semibold">
+                        <option value="all">All Staff</option>
+                        <option value="department">Specific Department</option>
+                        <option value="designation">Specific Designation</option>
+                        <option value="single">Specific Staff Member</option>
+                    </select>
+                </div>
+
+                <div id="departmentField" class="conditional-field">
+                    <label for="departmentName" class="block text-sm font-medium text-gray-700">Department</label>
+                    <select id="departmentName" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2"></select>
+                </div>
+
+                <div id="designationField" class="conditional-field">
+                    <label for="designationName" class="block text-sm font-medium text-gray-700">Designation</label>
+                    <select id="designationName" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2">
+                        <option value="">-- Select Department First --</option>
+                    </select>
+                </div>
+
+                 <div id="staffField" class="conditional-field">
+                    <label for="staffName" class="block text-sm font-medium text-gray-700">Staff Member</label>
+                    <select id="staffName" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2">
+                        <option value="">-- Select Department First --</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label for="alertMessage" class="block text-sm font-medium text-gray-700">Alert Message</label>
+                    <textarea id="alertMessage" rows="6" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500 sm:text-sm p-2" placeholder="Type your high-priority alert here..."></textarea>
+                </div>
+
+                <div class="pt-4 border-t">
+                    <button type="submit" class="w-full inline-flex justify-center items-center rounded-md border border-transparent bg-red-600 px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2">
+                        Send Alert
+                    </button>
+                </div>
+            </form>
+             <div id="statusMessage" class="mt-4 p-4 rounded-md text-sm text-center"></div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, serverTimestamp, collectionGroup, query, where, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDXAxfC9xpob8wEkN5chch6uiLM37L4sCo",
+            authDomain: "soul-53b2d.firebaseapp.com",
+            projectId: "soul-53b2d",
+            storageBucket: "soul-53b2d.firebasestorage.app",
+            messagingSenderId: "511225275078",
+            appId: "1:511225275078:web:7b416a9debd2f579cdadc7",
+            measurementId: "G-L4FJ0N6SDQ"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // DOM Elements
+        const sendAlertForm = document.getElementById('sendAlertForm');
+        const sendToSelect = document.getElementById('sendTo');
+        const departmentField = document.getElementById('departmentField');
+        const departmentSelect = document.getElementById('departmentName');
+        const designationField = document.getElementById('designationField');
+        const designationSelect = document.getElementById('designationName');
+        const staffField = document.getElementById('staffField');
+        const staffSelect = document.getElementById('staffName');
+        const statusMessage = document.getElementById('statusMessage');
+
+        const departments = {
+            "Projects": "dept_proj_001", "Systems & Operations": "dept_sysop_002",
+            "Health, Safety & HR": "dept_hshr_003", "Legal & Compliance": "dept_legal_004",
+            "Depot & Maintenance": "dept_depot_005", "Finance & Accounts": "dept_fin_001"
+        };
+        const designationsByDept = {
+            "Projects": ["Site Engineer (Civil)", "Site Engineer (Electrical)", "Site Engineer (Mechanical)", "Draftsman / CAD Operator", "Surveyor", "Safety Officer", "Project Assistant"],
+            "Systems & Operations": ["Station Controller (SC)", "Train Operator (TO)", "Signal & Telecom Technician", "Electrical Maintainer", "Mechanical Maintainer", "Incident Reporter / Duty Staff"],
+            "Health, Safety & HR": ["Safety Inspector", "Training Assistant", "HR Assistant"],
+            "Legal & Compliance": ["Legal Assistant", "Documentation Clerk"],
+            "Depot & Maintenance": ["Depot Technician", "Rolling Stock Maintainer", "Workshop Assistant"],
+            "Finance & Accounts": ["Accounts Officer"]
+        };
+
+        function showStatus(message, type = 'info') {
+            statusMessage.textContent = message;
+            statusMessage.className = 'p-4 rounded-md text-sm text-center';
+            const colors = { success: 'bg-green-100 text-green-800', error: 'bg-red-100 text-red-800', info: 'bg-blue-100 text-blue-800' };
+            statusMessage.classList.add(...(colors[type] || colors.info).split(' '));
+            setTimeout(() => {
+                statusMessage.textContent = '';
+                statusMessage.className = 'mt-4 p-4 rounded-md text-sm text-center';
+            }, 5000);
+        }
+
+        function populateDropdown(selectElement, options, isObject = false) {
+            selectElement.innerHTML = '';
+            const defaultOption = document.createElement('option');
+            defaultOption.value = "";
+            let placeholder = `Select ${selectElement.id.includes('department') ? 'Department' : selectElement.id.includes('designation') ? 'Designation' : 'Staff'}`;
+            defaultOption.textContent = `-- ${placeholder} --`;
+            selectElement.appendChild(defaultOption);
+
+            if (isObject) {
+                 options.forEach(opt => {
+                    const option = document.createElement('option');
+                    option.value = JSON.stringify(opt); // Store full object
+                    option.textContent = `${opt.displayName} (${opt.employeeCode})`;
+                    selectElement.appendChild(option);
+                });
+            } else {
+                options.forEach(opt => {
+                    const option = document.createElement('option');
+                    option.value = opt;
+                    option.textContent = opt;
+                    selectElement.appendChild(option);
+                });
+            }
+        }
+
+        async function fetchAndPopulateStaff(departmentName) {
+            staffSelect.innerHTML = `<option value="">Fetching staff...</option>`;
+            try {
+                const employeesRef = collectionGroup(db, 'employees');
+                const q = query(employeesRef, where("departmentName", "==", departmentName));
+                const querySnapshot = await getDocs(q);
+
+                if (querySnapshot.empty) {
+                    staffSelect.innerHTML = `<option value="">No staff found</option>`;
+                    return;
+                }
+                
+                const staffList = [];
+                querySnapshot.forEach(doc => {
+                    const data = doc.data();
+                    staffList.push({ 
+                        uid: data.uid,
+                        employeeCode: data.employeeCode,
+                        displayName: data.displayName 
+                    });
+                });
+                populateDropdown(staffSelect, staffList, true);
+
+            } catch (error) {
+                console.error("Error fetching staff:", error);
+                staffSelect.innerHTML = `<option value="">Error fetching staff</option>`;
+            }
+        }
+
+        function handleTargetChange() {
+            const target = sendToSelect.value;
+            departmentField.style.display = 'none';
+            designationField.style.display = 'none';
+            staffField.style.display = 'none';
+            departmentSelect.value = '';
+            designationSelect.value = '';
+            staffSelect.value = '';
+
+            if (target === 'department' || target === 'designation' || target === 'single') {
+                departmentField.style.display = 'block';
+            }
+            if (target === 'designation' || target === 'single') {
+                designationField.style.display = 'block';
+            }
+            if (target === 'single') {
+                staffField.style.display = 'block';
+                designationSelect.innerHTML = `<option value="">-- Select Department First --</option>`;
+                staffSelect.innerHTML = `<option value="">-- Select Department First --</option>`;
+            }
+        }
+        
+        departmentSelect.addEventListener('change', (e) => {
+            const selectedDept = e.target.value;
+            const target = sendToSelect.value;
+            
+            if (selectedDept) {
+                if (target === 'designation' || target === 'single') {
+                    populateDropdown(designationSelect, designationsByDept[selectedDept] || []);
+                }
+                if (target === 'single') {
+                   fetchAndPopulateStaff(selectedDept);
+                }
+            }
+        });
+
+
+        sendAlertForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            showStatus('Sending alert...', 'info');
+
+            const targetScope = sendToSelect.value;
+            const department = departmentSelect.value;
+            const designation = designationSelect.value;
+            const staffJSON = staffSelect.value;
+            const message = document.getElementById('alertMessage').value;
+
+            if (!message.trim()) {
+                showStatus('Message cannot be empty.', 'error');
+                return;
+            }
+
+            let targetPayload = { scope: targetScope };
+            let targetDescription = 'All Staff';
+
+            switch (targetScope) {
+                case 'department':
+                    if (!department) { showStatus('Please select a department.', 'error'); return; }
+                    targetPayload.departmentName = department;
+                    targetDescription = `Department: ${department}`;
+                    break;
+                case 'designation':
+                    if (!department || !designation) { showStatus('Please select a department and designation.', 'error'); return; }
+                    targetPayload.departmentName = department;
+                    targetPayload.designationName = designation;
+                    targetDescription = `Designation: ${designation}`;
+                    break;
+                case 'single':
+                    if (!staffJSON) { showStatus('Please select a staff member.', 'error'); return; }
+                    const staff = JSON.parse(staffJSON);
+                    targetPayload.departmentName = department;
+                    targetPayload.designationName = designation;
+                    targetPayload.employeeId = staff.employeeCode;
+                    targetPayload.employeeUid = staff.uid;
+                    targetDescription = `Staff: ${staff.displayName}`;
+                    break;
+            }
+
+            try {
+                const alertData = {
+                    message,
+                    target: targetPayload,
+                    sentBy: 'super_admin_panel',
+                    sentAt: serverTimestamp(),
+                };
+                
+                await addDoc(collection(db, 'alerts'), alertData);
+                
+                showStatus(`Alert sent successfully to ${targetDescription}!`, 'success');
+                sendAlertForm.reset();
+                handleTargetChange();
+
+            } catch (error) {
+                console.error("Error sending alert:", error);
+                showStatus(`Error: ${error.message}`, 'error');
+            }
+        });
+
+        // Initializer
+        function initializePanel() {
+            populateDropdown(departmentSelect, Object.keys(departments));
+            sendToSelect.addEventListener('change', handleTargetChange);
+        }
+        initializePanel();
+    </script>
+</body>
+</html>

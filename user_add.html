@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firebase Super-Admin Panel</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .form-section { display: none; }
+        .form-section.active { display: grid; }
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border-left-color: #4f46e5;
+            animation: spin 1s ease infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+
+    <div class="container mx-auto p-4 md:p-8">
+        <header class="mb-8">
+            <h1 class="text-3xl font-bold text-gray-900">Super-Admin User Panel</h1>
+            <p class="text-gray-600 mt-1">Add, search, and manage all user roles in Firebase.</p>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-5 gap-8">
+
+            <!-- Left Column: Add User Form -->
+            <div class="lg:col-span-3 bg-white p-6 rounded-lg shadow-md">
+                <h2 class="text-xl font-semibold mb-4 border-b pb-3">Add New User</h2>
+                <form id="addUserForm" class="space-y-4">
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6">
+                        <div class="md:col-span-2">
+                             <label for="role" class="block text-sm font-medium text-gray-700">User Role</label>
+                             <select id="role" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 bg-indigo-50 font-semibold">
+                                 <option value="staff">Staff</option>
+                                 <option value="manager">Manager</option>
+                                 <option value="director">Director</option>
+                                 <option value="executive">Executive</option>
+                             </select>
+                         </div>
+                    </div>
+
+                    <!-- Common Authentication Fields -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 pt-4 border-t">
+                        <div class="md:col-span-2 font-bold text-gray-600 text-sm uppercase">Authentication</div>
+                        <div>
+                            <label for="email" class="block text-sm font-medium text-gray-700">Email Address</label>
+                            <input type="email" id="email" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2">
+                        </div>
+                        <div>
+                            <label for="password" class="block text-sm font-medium text-gray-700">Password</label>
+                            <input type="password" id="password" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2">
+                        </div>
+                    </div>
+
+                    <!-- Dynamic Form Sections -->
+                    <div id="dynamic-form-fields" class="space-y-4">
+                        
+                        <!-- Staff Fields -->
+                        <div id="staffFields" class="form-section active grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 pt-4 border-t">
+                           <div class="md:col-span-2 font-bold text-gray-600 text-sm uppercase">Staff Details</div>
+                           <div>
+                                <label for="s_firstName" class="block text-sm font-medium text-gray-700">First Name</label>
+                                <input type="text" id="s_firstName" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2">
+                            </div>
+                            <div>
+                                <label for="s_lastName" class="block text-sm font-medium text-gray-700">Last Name</label>
+                                <input type="text" id="s_lastName" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2">
+                            </div>
+                           <div>
+                                <label for="s_employeeCode" class="block text-sm font-medium text-gray-700">Employee Code</label>
+                                <input type="text" id="s_employeeCode" placeholder="KMRL-AO-1029" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2">
+                            </div>
+                            <div>
+                                <label for="s_phoneE164" class="block text-sm font-medium text-gray-700">Phone (E.164)</label>
+                                <input type="tel" id="s_phoneE164" placeholder="+919812345678" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2">
+                            </div>
+                            <div>
+                                <label for="s_departmentName" class="block text-sm font-medium text-gray-700">Department Name</label>
+                                <select id="s_departmentName" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2"></select>
+                            </div>
+                            <div>
+                                <label for="s_designation" class="block text-sm font-medium text-gray-700">Designation</label>
+                                <select id="s_designation" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2">
+                                   <option value="">-- Select Department First --</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="s_departmentId" class="block text-sm font-medium text-gray-700">Department ID</label>
+                                <input type="text" id="s_departmentId" readonly class="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm p-2 bg-gray-100">
+                            </div>
+                             <div>
+                                <label for="s_managerId" class="block text-sm font-medium text-gray-700">Manager ID</label>
+                                <input type="text" id="s_managerId" placeholder="mgr_7yZ..." class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2">
+                            </div>
+                        </div>
+
+                        <!-- Manager Fields -->
+                         <div id="managerFields" class="form-section grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 pt-4 border-t">
+                            <div class="md:col-span-2 font-bold text-gray-600 text-sm uppercase">Manager Details</div>
+                            <div>
+                                <label for="m_firstName" class="block text-sm font-medium text-gray-700">First Name</label>
+                                <input type="text" id="m_firstName" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm p-2">
+                            </div>
+                             <div>
+                                <label for="m_lastName" class="block text-sm font-medium text-gray-700">Last Name</label>
+                                <input type="text" id="m_lastName" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm p-2">
+                            </div>
+                             <div>
+                                <label for="m_employeeCode" class="block text-sm font-medium text-gray-700">Employee Code</label>
+                                <input type="text" id="m_employeeCode" placeholder="KMRL-MGR-010" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm p-2">
+                            </div>
+                            <div>
+                                <label for="m_phoneE164" class="block text-sm font-medium text-gray-700">Phone (E.164)</label>
+                                <input type="tel" id="m_phoneE164" placeholder="+919812300111" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm p-2">
+                            </div>
+                             <div>
+                                <label for="m_departmentName" class="block text-sm font-medium text-gray-700">Department Name</label>
+                                <select id="m_departmentName" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm p-2"></select>
+                            </div>
+                             <div>
+                                <label for="m_designation" class="block text-sm font-medium text-gray-700">Designation</label>
+                                 <input type="text" id="m_designation" placeholder="Finance Manager" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm p-2">
+                            </div>
+                             <div>
+                                <label for="m_departmentId" class="block text-sm font-medium text-gray-700">Department ID</label>
+                                <input type="text" id="m_departmentId" readonly class="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm p-2 bg-gray-100">
+                            </div>
+                             <div>
+                                <label for="m_directorId" class="block text-sm font-medium text-gray-700">Director ID</label>
+                                <input type="text" id="m_directorId" placeholder="dir_88p..." class="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm p-2">
+                            </div>
+                        </div>
+
+                        <!-- Director Fields -->
+                         <div id="directorFields" class="form-section grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 pt-4 border-t">
+                            <div class="md:col-span-2 font-bold text-gray-600 text-sm uppercase">Director Details</div>
+                             <div>
+                                <label for="d_firstName" class="block text-sm font-medium text-gray-700">First Name</label>
+                                <input type="text" id="d_firstName" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm p-2">
+                            </div>
+                             <div>
+                                <label for="d_lastName" class="block text-sm font-medium text-gray-700">Last Name</label>
+                                <input type="text" id="d_lastName" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm p-2">
+                            </div>
+                            <div>
+                                <label for="d_employeeCode" class="block text-sm font-medium text-gray-700">Employee Code</label>
+                                <input type="text" id="d_employeeCode" placeholder="KMRL-DIR-002" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm p-2">
+                            </div>
+                             <div>
+                                <label for="d_phoneE164" class="block text-sm font-medium text-gray-700">Phone (E.164)</label>
+                                <input type="tel" id="d_phoneE164" placeholder="+919812300222" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm p-2">
+                            </div>
+                             <div class="md:col-span-2">
+                                <label for="d_designation" class="block text-sm font-medium text-gray-700">Designation</label>
+                                 <input type="text" id="d_designation" placeholder="Director - Finance & Systems" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm p-2">
+                            </div>
+                            <div>
+                                <label for="d_sector" class="block text-sm font-medium text-gray-700">Sector</label>
+                                <input type="text" id="d_sector" placeholder="Finance & Systems" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm p-2">
+                            </div>
+                             <div>
+                                <label for="d_executiveId" class="block text-sm font-medium text-gray-700">Executive ID</label>
+                                <input type="text" id="d_executiveId" placeholder="exe_45q..." class="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm p-2">
+                            </div>
+                        </div>
+
+                        <!-- Executive Fields -->
+                        <div id="executiveFields" class="form-section grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 pt-4 border-t">
+                            <div class="md:col-span-2 font-bold text-gray-600 text-sm uppercase">Executive Details</div>
+                             <div>
+                                <label for="e_firstName" class="block text-sm font-medium text-gray-700">First Name</label>
+                                <input type="text" id="e_firstName" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm p-2">
+                            </div>
+                            <div>
+                                <label for="e_lastName" class="block text-sm font-medium text-gray-700">Last Name</label>
+                                <input type="text" id="e_lastName" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm p-2">
+                            </div>
+                             <div>
+                                <label for="e_employeeCode" class="block text-sm font-medium text-gray-700">Employee Code</label>
+                                <input type="text" id="e_employeeCode" placeholder="KMRL-EXE-001" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm p-2">
+                            </div>
+                            <div>
+                                <label for="e_phoneE164" class="block text-sm font-medium text-gray-700">Phone (E.164)</label>
+                                <input type="tel" id="e_phoneE164" placeholder="+919812300333" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm p-2">
+                            </div>
+                             <div class="md:col-span-2">
+                                <label for="e_designation" class="block text-sm font-medium text-gray-700">Designation</label>
+                                <input type="text" id="e_designation" value="Executive Director" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm p-2">
+                            </div>
+                            <div class="md:col-span-2">
+                                <label for="e_domainScope" class="block text-sm font-medium text-gray-700">Domain Scope (comma-separated)</label>
+                                <input type="text" id="e_domainScope" placeholder="Finance, Projects, Operations" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm p-2">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Common System & Other Fields -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 pt-4 border-t">
+                        <div class="md:col-span-2 font-bold text-gray-600 text-sm uppercase">System & Other Details</div>
+                         <div>
+                            <label for="joinDate" class="block text-sm font-medium text-gray-700">Join Date</label>
+                            <input type="date" id="joinDate" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm p-2">
+                        </div>
+                         <div>
+                            <label for="employmentStatus" class="block text-sm font-medium text-gray-700">Employment Status</label>
+                            <select id="employmentStatus" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm p-2">
+                                <option>active</option>
+                                <option>inactive</option>
+                                <option>on-leave</option>
+                            </select>
+                        </div>
+                        <div>
+                           <label for="domainColour" class="block text-sm font-medium text-gray-700">Domain Colour</label>
+                           <select id="domainColour" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm p-2">
+                               <option value="blue">Blue</option>
+                               <option value="gold">Gold</option>
+                               <option value="green">Green</option>
+                               <option value="red">Red</option>
+                               <option value="purple">Purple</option>
+                           </select>
+                       </div>
+                        <div class="flex items-center">
+                            <input id="isAccessAllocator" type="checkbox" class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                            <label for="isAccessAllocator" class="ml-2 block text-sm text-gray-900">Is Access Allocator?</label>
+                        </div>
+                         <div class="md:col-span-2">
+                            <label class="block text-sm font-medium text-gray-700">Notification Channels</label>
+                            <div class="mt-2 flex items-center gap-4">
+                               <div class="flex items-center">
+                                   <input id="notifyEmail" type="checkbox" checked class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                                   <label for="notifyEmail" class="ml-2 block text-sm text-gray-900">Email</label>
+                               </div>
+                               <div class="flex items-center">
+                                   <input id="notifyWhatsapp" type="checkbox" checked class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                                   <label for="notifyWhatsapp" class="ml-2 block text-sm text-gray-900">WhatsApp</label>
+                               </div>
+                               <div class="flex items-center">
+                                   <input id="notifyPush" type="checkbox" checked class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                                   <label for="notifyPush" class="ml-2 block text-sm text-gray-900">Push</label>
+                               </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="pt-4 border-t">
+                        <button type="submit" class="w-full inline-flex justify-center items-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                            Add User
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Right Column: Search & View -->
+            <div class="lg:col-span-2 space-y-8">
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h2 class="text-xl font-semibold mb-4 border-b pb-3">Search Users</h2>
+                    <form id="searchUserForm" class="space-y-4">
+                        <div>
+                           <label for="searchRole" class="block text-sm font-medium text-gray-700">Search In</label>
+                           <select id="searchRole" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2">
+                               <option value="staffs">Staff</option>
+                               <option value="managers">Managers</option>
+                               <option value="directors">Directors</option>
+                               <option value="executives">Executives</option>
+                           </select>
+                       </div>
+                       <!-- Staff Specific Filters -->
+                       <div id="staffSearchFilters" class="space-y-4">
+                           <div>
+                               <label for="searchDepartment" class="block text-sm font-medium text-gray-700">Department</label>
+                               <select id="searchDepartment" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm p-2">
+                                   <option value="">All Departments</option>
+                               </select>
+                           </div>
+                       </div>
+                        <div>
+                            <label for="searchQuery" class="block text-sm font-medium text-gray-700">Employee Code or Name</label>
+                            <div class="mt-1 flex rounded-md shadow-sm">
+                                <input type="text" id="searchQuery" class="block w-full flex-1 rounded-none rounded-l-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2" placeholder="e.g., KMRL-AO-1029 or Anita">
+                                <button type="submit" class="inline-flex items-center rounded-r-md border border-l-0 border-gray-300 bg-gray-50 px-4 text-sm text-gray-500 hover:bg-gray-100">Search</button>
+                            </div>
+                        </div>
+                    </form>
+                    <div id="searchResults" class="mt-4 space-y-2"></div>
+                </div>
+
+                <div id="userDetailsCard" class="bg-white p-6 rounded-lg shadow-md hidden">
+                    <h2 class="text-xl font-semibold mb-4 border-b pb-3">User Details</h2>
+                    <div id="userDetailsContent" class="space-y-3 text-sm"></div>
+                </div>
+                <div id="statusMessage" class="p-4 rounded-md text-sm text-center"></div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, collection, query, where, getDocs, serverTimestamp, collectionGroup } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDXAxfC9xpob8wEkN5chch6uiLM37L4sCo",
+            authDomain: "soul-53b2d.firebaseapp.com",
+            projectId: "soul-53b2d",
+            storageBucket: "soul-53b2d.firebasestorage.app",
+            messagingSenderId: "511225275078",
+            appId: "1:511225275078:web:7b416a9debd2f579cdadc7",
+            measurementId: "G-L4FJ0N6SDQ"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // DOM Elements
+        const addUserForm = document.getElementById('addUserForm');
+        const searchUserForm = document.getElementById('searchUserForm');
+        const searchResults = document.getElementById('searchResults');
+        const userDetailsCard = document.getElementById('userDetailsCard');
+        const userDetailsContent = document.getElementById('userDetailsContent');
+        const statusMessage = document.getElementById('statusMessage');
+        const roleSelect = document.getElementById('role');
+        const searchRoleSelect = document.getElementById('searchRole');
+        const staffSearchFilters = document.getElementById('staffSearchFilters');
+
+        const departments = {
+            "Projects": "dept_proj_001", "Systems & Operations": "dept_sysop_002",
+            "Health, Safety & HR": "dept_hshr_003", "Legal & Compliance": "dept_legal_004",
+            "Depot & Maintenance": "dept_depot_005", "Finance & Accounts": "dept_fin_001"
+        };
+        const designationsByDept = {
+            "Projects": ["Site Engineer (Civil)", "Site Engineer (Electrical)", "Site Engineer (Mechanical)", "Draftsman / CAD Operator", "Surveyor", "Safety Officer", "Project Assistant"],
+            "Systems & Operations": ["Station Controller (SC)", "Train Operator (TO)", "Signal & Telecom Technician", "Electrical Maintainer", "Mechanical Maintainer", "Incident Reporter / Duty Staff"],
+            "Health, Safety & HR": ["Safety Inspector", "Training Assistant", "HR Assistant"],
+            "Legal & Compliance": ["Legal Assistant", "Documentation Clerk"],
+            "Depot & Maintenance": ["Depot Technician", "Rolling Stock Maintainer", "Workshop Assistant"],
+            "Finance & Accounts": ["Accounts Officer"]
+        };
+
+        function populateDropdown(selectElement, options, includeDefault = true) {
+            selectElement.innerHTML = '';
+            if (includeDefault) {
+                const defaultOption = document.createElement('option');
+                defaultOption.value = "";
+                defaultOption.textContent = `-- Select ${selectElement.id.includes('Department') ? 'Department' : 'Designation'} --`;
+                selectElement.appendChild(defaultOption);
+            }
+            options.forEach(opt => {
+                const option = document.createElement('option');
+                option.value = opt;
+                option.textContent = opt;
+                selectElement.appendChild(option);
+            });
+        }
+
+        function updateFormForRole() {
+            const selectedRole = roleSelect.value;
+            document.querySelectorAll('.form-section').forEach(sec => sec.classList.remove('active'));
+            document.getElementById(`${selectedRole}Fields`).classList.add('active');
+        }
+        
+        function initializeForm() {
+            // Populate department dropdowns
+            const deptNames = Object.keys(departments);
+            populateDropdown(document.getElementById('s_departmentName'), deptNames);
+            populateDropdown(document.getElementById('m_departmentName'), deptNames);
+            populateDropdown(document.getElementById('searchDepartment'), deptNames);
+
+            // Staff form department/designation logic
+            const sDept = document.getElementById('s_departmentName');
+            sDept.addEventListener('change', () => {
+                const selectedDept = sDept.value;
+                document.getElementById('s_departmentId').value = selectedDept ? departments[selectedDept] : '';
+                populateDropdown(document.getElementById('s_designation'), designationsByDept[selectedDept] || [], true);
+            });
+            // Manager form department logic
+             const mDept = document.getElementById('m_departmentName');
+            mDept.addEventListener('change', () => {
+                const selectedDept = mDept.value;
+                document.getElementById('m_departmentId').value = selectedDept ? departments[selectedDept] : '';
+            });
+
+            roleSelect.addEventListener('change', updateFormForRole);
+            searchRoleSelect.addEventListener('change', () => {
+                staffSearchFilters.style.display = searchRoleSelect.value === 'staffs' ? 'block' : 'none';
+            });
+            updateFormForRole();
+            staffSearchFilters.style.display = 'block'; // Default view
+        }
+        initializeForm();
+
+        function showStatus(message, type = 'info') {
+            statusMessage.textContent = message;
+            statusMessage.className = 'p-4 rounded-md text-sm text-center';
+            const colors = { success: 'bg-green-100 text-green-800', error: 'bg-red-100 text-red-800', info: 'bg-blue-100 text-blue-800' };
+            statusMessage.classList.add(...(colors[type] || colors.info).split(' '));
+            setTimeout(() => statusMessage.textContent = '', 5000);
+        }
+
+        addUserForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            showStatus('Processing...', 'info');
+
+            const role = roleSelect.value;
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            let newUser = {};
+
+            const commonData = {
+                email: email,
+                avatarUrl: null,
+                language: 'en',
+                joinDate: document.getElementById('joinDate').value,
+                employmentStatus: document.getElementById('employmentStatus').value,
+                domainColour: document.getElementById('domainColour').value,
+                isAccessAllocator: document.getElementById('isAccessAllocator').checked,
+                notifyChannels: {
+                    email: document.getElementById('notifyEmail').checked,
+                    whatsapp: document.getElementById('notifyWhatsapp').checked,
+                    push: document.getElementById('notifyPush').checked,
+                },
+                createdBy: "super_admin_panel",
+                createdAt: serverTimestamp(),
+                updatedAt: serverTimestamp(),
+                lastLoginAt: null
+            };
+
+            // Build user object based on role
+            switch (role) {
+                case 'staff':
+                    newUser = { ...commonData, role: 'staff', roles: ['staff'],
+                        firstName: document.getElementById('s_firstName').value,
+                        lastName: document.getElementById('s_lastName').value,
+                        displayName: `${document.getElementById('s_firstName').value} ${document.getElementById('s_lastName').value}`,
+                        employeeCode: document.getElementById('s_employeeCode').value,
+                        phoneE164: document.getElementById('s_phoneE164').value,
+                        departmentName: document.getElementById('s_departmentName').value,
+                        designation: document.getElementById('s_designation').value,
+                        departmentId: document.getElementById('s_departmentId').value,
+                        managerId: document.getElementById('s_managerId').value,
+                    };
+                    break;
+                case 'manager':
+                    newUser = { ...commonData, role: 'manager', roles: ['manager', 'staff'],
+                        firstName: document.getElementById('m_firstName').value,
+                        lastName: document.getElementById('m_lastName').value,
+                        displayName: `${document.getElementById('m_firstName').value} ${document.getElementById('m_lastName').value}`,
+                        employeeCode: document.getElementById('m_employeeCode').value,
+                        phoneE164: document.getElementById('m_phoneE164').value,
+                        departmentName: document.getElementById('m_departmentName').value,
+                        designation: document.getElementById('m_designation').value,
+                        departmentId: document.getElementById('m_departmentId').value,
+                        directorId: document.getElementById('m_directorId').value,
+                    };
+                    break;
+                case 'director':
+                     newUser = { ...commonData, role: 'director', roles: ['director', 'manager', 'staff'],
+                        firstName: document.getElementById('d_firstName').value,
+                        lastName: document.getElementById('d_lastName').value,
+                        displayName: `${document.getElementById('d_firstName').value} ${document.getElementById('d_lastName').value}`,
+                        employeeCode: document.getElementById('d_employeeCode').value,
+                        phoneE164: document.getElementById('d_phoneE164').value,
+                        designation: document.getElementById('d_designation').value,
+                        sector: document.getElementById('d_sector').value,
+                        executiveId: document.getElementById('d_executiveId').value,
+                    };
+                    break;
+                case 'executive':
+                     newUser = { ...commonData, role: 'executive', roles: ['executive', 'director', 'manager', 'staff'],
+                        firstName: document.getElementById('e_firstName').value,
+                        lastName: document.getElementById('e_lastName').value,
+                        displayName: `${document.getElementById('e_firstName').value} ${document.getElementById('e_lastName').value}`,
+                        employeeCode: document.getElementById('e_employeeCode').value,
+                        phoneE164: document.getElementById('e_phoneE164').value,
+                        designation: document.getElementById('e_designation').value,
+                        domainScope: document.getElementById('e_domainScope').value.split(',').map(s => s.trim()),
+                        superAdminId: "sup_001",
+                    };
+                    break;
+            }
+
+            if (!newUser.employeeCode) {
+                showStatus('Employee Code is required.', 'error');
+                return;
+            }
+
+            try {
+                // IMPORTANT: Client-side user creation signs in the new user.
+                // A real-world super-admin panel should use a backend with the Admin SDK
+                // to avoid this behavior and to manage sessions properly.
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                newUser.uid = userCredential.user.uid;
+
+                let userDocRef;
+                const employeeCode = newUser.employeeCode;
+
+                switch (role) {
+                    case 'staff':
+                    case 'manager':
+                        const dept = newUser.departmentName;
+                        const desig = newUser.designation;
+                        if (!dept || !desig) {
+                            showStatus('Department and Designation are required for path.', 'error');
+                            return;
+                        }
+                        // Create intermediate department document
+                        const deptDocRef = doc(db, 'users', `${role}s`, 'departments', dept);
+                        await setDoc(deptDocRef, { createdAt: serverTimestamp() }, { merge: true });
+                        // Create intermediate designation document
+                        const desigDocRef = doc(db, 'users', `${role}s`, 'departments', dept, 'designations', desig);
+                        await setDoc(desigDocRef, { createdAt: serverTimestamp() }, { merge: true });
+                        // Set user document
+                        userDocRef = doc(db, 'users', `${role}s`, 'departments', dept, 'designations', desig, 'employees', employeeCode);
+                        break;
+                    case 'director':
+                        const sector = newUser.sector;
+                        const dirDesig = newUser.designation;
+                        if (!sector || !dirDesig) {
+                            showStatus('Sector and Designation are required for path.', 'error');
+                            return;
+                        }
+                        // Create intermediate sector document
+                        const sectorDocRef = doc(db, 'users', 'directors', 'sectors', sector);
+                        await setDoc(sectorDocRef, { createdAt: serverTimestamp() }, { merge: true });
+                        // Create intermediate designation document
+                        const dirDesigDocRef = doc(db, 'users', 'directors', 'sectors', sector, 'designations', dirDesig);
+                        await setDoc(dirDesigDocRef, { createdAt: serverTimestamp() }, { merge: true });
+                        // Set user document
+                        userDocRef = doc(db, 'users', 'directors', 'sectors', sector, 'designations', dirDesig, 'employees', employeeCode);
+                        break;
+                    case 'executive':
+                        const scope = newUser.domainScope?.[0]; // Use the first scope for the path
+                        const execDesig = newUser.designation;
+                        if (!scope || !execDesig) {
+                             showStatus('Domain Scope and Designation are required for path.', 'error');
+                            return;
+                        }
+                        // Create intermediate scope document
+                        const scopeDocRef = doc(db, 'users', 'executives', 'scopes', scope);
+                        await setDoc(scopeDocRef, { createdAt: serverTimestamp() }, { merge: true });
+                        // Create intermediate designation document
+                        const execDesigDocRef = doc(db, 'users', 'executives', 'scopes', scope, 'designations', execDesig);
+                        await setDoc(execDesigDocRef, { createdAt: serverTimestamp() }, { merge: true });
+                        // Set user document
+                        userDocRef = doc(db, 'users', 'executives', 'scopes', scope, 'designations', execDesig, 'employees', employeeCode);
+                        break;
+                }
+                
+                if (!userDocRef) {
+                    showStatus('Could not determine the correct Firestore path for this user role.', 'error');
+                    return;
+                }
+
+                await setDoc(userDocRef, newUser);
+                
+                // Sign out the newly created user to restore the admin context if one existed.
+                await signOut(auth);
+
+                showStatus(`User ${newUser.displayName} added successfully as ${role}!`, 'success');
+                addUserForm.reset();
+                updateFormForRole(); // Reset form view
+            } catch (error) {
+                console.error("Error adding user:", error);
+                showStatus(`Error: ${error.message}`, 'error');
+            }
+        });
+
+        searchUserForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const roleToSearch = searchRoleSelect.value;
+            const searchTerm = document.getElementById('searchQuery').value.trim();
+            const departmentFilter = document.getElementById('searchDepartment').value;
+            
+            showStatus('Searching...', 'info');
+            searchResults.innerHTML = '<div class="flex justify-center"><div class="spinner"></div></div>';
+            userDetailsCard.classList.add('hidden');
+            
+            try {
+                const employeesRef = collectionGroup(db, 'employees');
+                const queryConstraints = [
+                    where("role", "==", roleToSearch.slice(0, -1)) // 'staffs' -> 'staff'
+                ];
+
+                // Add department filter if applicable for staff
+                if (departmentFilter && roleToSearch === 'staffs') {
+                    queryConstraints.push(where("departmentName", "==", departmentFilter));
+                }
+
+                const resultsMap = new Map();
+
+                if (searchTerm) {
+                    // Firestore client SDK doesn't support OR queries on different fields.
+                    // We run separate queries and merge the results client-side.
+                    const codeQuery = query(employeesRef, ...queryConstraints, where("employeeCode", "==", searchTerm));
+                    const firstNameQuery = query(employeesRef, ...queryConstraints, where("firstName", "==", searchTerm));
+                    const lastNameQuery = query(employeesRef, ...queryConstraints, where("lastName", "==", searchTerm));
+
+                    const [codeSnap, firstNameSnap, lastNameSnap] = await Promise.all([
+                        getDocs(codeQuery), getDocs(firstNameQuery), getDocs(lastNameQuery)
+                    ]);
+
+                    codeSnap.forEach(doc => resultsMap.set(doc.id, doc.data()));
+                    firstNameSnap.forEach(doc => resultsMap.set(doc.id, doc.data()));
+                    lastNameSnap.forEach(doc => resultsMap.set(doc.id, doc.data()));
+
+                } else {
+                    // If no search term, just search with the active filters (role, department)
+                    const finalQuery = query(employeesRef, ...queryConstraints);
+                    const querySnapshot = await getDocs(finalQuery);
+                    querySnapshot.forEach(doc => {
+                        resultsMap.set(doc.id, doc.data());
+                    });
+                }
+
+                displaySearchResults(Array.from(resultsMap.values()));
+
+            } catch (error) {
+                console.error("Error searching users:", error);
+                showStatus(`Error: ${error.message}. Note: Complex queries may require creating indexes in the Firebase console.`, 'error');
+                searchResults.innerHTML = '';
+            }
+        });
+
+        function displaySearchResults(users) {
+            searchResults.innerHTML = '';
+            if (users.length === 0) {
+                searchResults.innerHTML = `<p class="text-sm text-gray-500">No users found.</p>`;
+                showStatus('No matching users found.', 'info');
+                return;
+            }
+            users.forEach(user => {
+                const div = document.createElement('div');
+                div.className = 'p-3 bg-gray-100 rounded-md hover:bg-indigo-100 cursor-pointer text-sm';
+                div.textContent = `${user.displayName} (${user.employeeCode})`;
+                div.addEventListener('click', () => displayUserDetails(user));
+                searchResults.appendChild(div);
+            });
+            showStatus(`${users.length} user(s) found.`, 'success');
+        }
+
+       function displayUserDetails(user) {
+            let content = '';
+            for (const [key, value] of Object.entries(user)) {
+                let displayValue = value;
+                if (value === null) displayValue = '<em>null</em>';
+                else if (Array.isArray(value)) displayValue = value.join(', ');
+                else if (typeof value === 'object' && value && value.seconds) displayValue = new Date(value.seconds * 1000).toLocaleString();
+                else if (typeof value === 'object' && value !== null) displayValue = `<pre class="bg-gray-100 p-2 rounded-md text-xs">${JSON.stringify(value, null, 2)}</pre>`;
+                
+                content += `<div class="grid grid-cols-3 gap-2 border-b last:border-b-0 py-2">
+                                <strong class="font-medium text-gray-600 col-span-1 capitalize">${key.replace(/([A-Z])/g, ' $1')}</strong>
+                                <div class="text-gray-800 col-span-2 break-all">${displayValue}</div>
+                            </div>`;
+            }
+            userDetailsContent.innerHTML = content;
+            userDetailsCard.classList.remove('hidden');
+            showStatus(`Details for ${user.displayName} loaded.`, 'success');
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale-1.0">
+    <title>Projects & Assignments Panel</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border-left-color: #4f46e5;
+            animation: spin 1s ease infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        /* Modal styles */
+        .modal {
+            transition: opacity 0.25s ease;
+        }
+        .modal-active {
+            overflow-x: hidden;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+
+    <div class="container mx-auto p-4 md:p-8">
+        <header class="mb-8">
+            <h1 class="text-3xl font-bold text-gray-900">Projects & Assignments Panel</h1>
+            <p class="text-gray-600 mt-1">Create projects, assign staff, and manage tasks.</p>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+
+            <!-- Left Column: Create Project -->
+            <div class="bg-white p-6 rounded-lg shadow-md h-fit">
+                <h2 class="text-xl font-semibold mb-4 border-b pb-3">Create New Project</h2>
+                <form id="createProjectForm" class="space-y-4">
+                    <div>
+                        <label for="projectName" class="block text-sm font-medium text-gray-700">Project Name</label>
+                        <input type="text" id="projectName" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2">
+                    </div>
+                    <div>
+                        <label for="projectId" class="block text-sm font-medium text-gray-700">Project ID</label>
+                        <input type="text" id="projectId" required placeholder="PROJ-METRO-01" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2">
+                    </div>
+                    <div>
+                        <label for="projectDescription" class="block text-sm font-medium text-gray-700">Project Description</label>
+                        <textarea id="projectDescription" rows="4" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2"></textarea>
+                    </div>
+                    <div class="pt-2">
+                        <button type="submit" class="w-full inline-flex justify-center items-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-indigo-700">
+                            Save Project
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Right Column: Assign Staff -->
+            <div class="bg-white p-6 rounded-lg shadow-md">
+                <h2 class="text-xl font-semibold mb-4 border-b pb-3">Assign Staff to Project</h2>
+                <form id="assignStaffForm" class="space-y-4">
+                    <div>
+                        <label for="selectProject" class="block text-sm font-medium text-gray-700">1. Select Project</label>
+                        <select id="selectProject" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 bg-indigo-50 font-semibold">
+                            <option value="">-- Loading Projects --</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="selectDepartment" class="block text-sm font-medium text-gray-700">2. Filter Staff by Department</label>
+                        <select id="selectDepartment" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2">
+                            <option value="">-- Select a Department --</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">3. Select Staff to Assign</label>
+                        <div id="staffList" class="mt-2 h-64 overflow-y-auto border rounded-md p-2 space-y-2 bg-gray-50">
+                            <p class="text-center text-gray-500 text-sm">Please select a department to see staff.</p>
+                        </div>
+                    </div>
+                     <div class="pt-2">
+                        <button type="submit" class="w-full inline-flex justify-center items-center rounded-md border border-transparent bg-green-600 px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-green-700">
+                            Assign Selected Staff
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Task Management Section -->
+        <div class="mt-8 bg-white p-6 rounded-lg shadow-md">
+             <h2 class="text-xl font-semibold mb-4 border-b pb-3">Task Management</h2>
+             <div class="space-y-4">
+                 <div>
+                    <label for="taskProjectSelect" class="block text-sm font-medium text-gray-700">Select Project to Manage</label>
+                    <select id="taskProjectSelect" class="mt-1 block w-full md:w-1/2 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 bg-indigo-50 font-semibold">
+                        <option value="">-- Loading Projects --</option>
+                    </select>
+                 </div>
+
+                 <div id="projectDetails" class="hidden p-4 bg-gray-50 rounded-lg space-y-4">
+                     <div class="flex justify-between items-start">
+                         <div>
+                            <h3 class="text-lg font-bold" id="projectDetailName"></h3>
+                            <div class="flex items-center gap-2 mt-1">
+                                <span class="text-sm font-medium text-gray-600">Status:</span>
+                                <span id="projectDetailStatus" class="text-sm font-semibold py-1 px-3 rounded-full"></span>
+                            </div>
+                         </div>
+                         <button id="completeProjectBtn" class="bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700">Mark Project as Completed</button>
+                     </div>
+                     <hr>
+                     <div class="flex justify-between items-center">
+                         <h4 class="text-md font-semibold">Tasks</h4>
+                         <button id="addNewTaskBtn" class="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-indigo-700">Add New Task</button>
+                     </div>
+                     <div id="taskListContainer" class="space-y-3">
+                         <p class="text-center text-gray-500 text-sm">No tasks found for this project. Add one to get started!</p>
+                     </div>
+                 </div>
+             </div>
+        </div>
+
+        <div id="statusMessage" class="mt-8 max-w-4xl mx-auto p-4 rounded-md text-sm text-center"></div>
+    </div>
+
+    <!-- Add Task Modal -->
+    <div id="addTaskModal" class="modal pointer-events-none fixed w-full h-full top-0 left-0 flex items-center justify-center opacity-0">
+        <div class="modal-overlay absolute w-full h-full bg-gray-900 opacity-50"></div>
+        <div class="modal-container bg-white w-11/12 md:max-w-md mx-auto rounded shadow-lg z-50 overflow-y-auto">
+            <div class="modal-content py-4 text-left px-6">
+                <div class="flex justify-between items-center pb-3">
+                    <p class="text-2xl font-bold">Add New Task</p>
+                    <div class="modal-close cursor-pointer z-50">
+                        <svg class="fill-current text-black" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18">
+                            <path d="M14.53 4.53l-1.06-1.06L9 7.94 4.53 3.47 3.47 4.53 7.94 9l-4.47 4.47 1.06 1.06L9 10.06l4.47 4.47 1.06-1.06L10.06 9z"></path>
+                        </svg>
+                    </div>
+                </div>
+                <form id="addTaskForm" class="space-y-4">
+                    <div>
+                        <label for="taskName" class="block text-sm font-medium text-gray-700">Task Name</label>
+                        <input type="text" id="taskName" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2">
+                    </div>
+                    <div>
+                        <label for="taskDescription" class="block text-sm font-medium text-gray-700">Task Description</label>
+                        <textarea id="taskDescription" rows="3" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2"></textarea>
+                    </div>
+                    <div class="flex justify-end pt-2">
+                        <button type="button" class="modal-close-btn px-4 bg-transparent p-3 rounded-lg text-indigo-500 hover:bg-gray-100 hover:text-indigo-400 mr-2">Cancel</button>
+                        <button type="submit" class="px-4 bg-indigo-500 p-3 rounded-lg text-white hover:bg-indigo-400">Add Task</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getFirestore, doc, setDoc, getDoc, getDocs, collection, serverTimestamp, updateDoc, arrayUnion, collectionGroup, query, where, addDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDXAxfC9xpob8wEkN5chch6uiLM37L4sCo",
+            authDomain: "soul-53b2d.firebaseapp.com",
+            projectId: "soul-53b2d",
+            storageBucket: "soul-53b2d.firebasestorage.app",
+            messagingSenderId: "511225275078",
+            appId: "1:511225275078:web:7b416a9debd2f579cdadc7",
+            measurementId: "G-L4FJ0N6SDQ"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // DOM Elements
+        const createProjectForm = document.getElementById('createProjectForm');
+        const assignStaffForm = document.getElementById('assignStaffForm');
+        const projectSelect = document.getElementById('selectProject');
+        const taskProjectSelect = document.getElementById('taskProjectSelect');
+        const departmentSelect = document.getElementById('selectDepartment');
+        const staffListDiv = document.getElementById('staffList');
+        const statusMessage = document.getElementById('statusMessage');
+        const projectDetailsDiv = document.getElementById('projectDetails');
+        const projectDetailName = document.getElementById('projectDetailName');
+        const projectDetailStatus = document.getElementById('projectDetailStatus');
+        const taskListContainer = document.getElementById('taskListContainer');
+        const completeProjectBtn = document.getElementById('completeProjectBtn');
+        const addNewTaskBtn = document.getElementById('addNewTaskBtn');
+        const addTaskModal = document.getElementById('addTaskModal');
+        const addTaskForm = document.getElementById('addTaskForm');
+        
+        let currentTaskListener = null; // To hold the active onSnapshot listener
+
+        const departments = {
+            "Projects": "dept_proj_001", "Systems & Operations": "dept_sysop_002",
+            "Health, Safety & HR": "dept_hshr_003", "Legal & Compliance": "dept_legal_004",
+            "Depot & Maintenance": "dept_depot_005", "Finance & Accounts": "dept_fin_001"
+        };
+
+        function showStatus(message, type = 'info') {
+            statusMessage.textContent = message;
+            statusMessage.className = 'mt-8 max-w-4xl mx-auto p-4 rounded-md text-sm text-center';
+            const colors = { success: 'bg-green-100 text-green-800', error: 'bg-red-100 text-red-800', info: 'bg-blue-100 text-blue-800' };
+            statusMessage.classList.add(...(colors[type] || colors.info).split(' '));
+            setTimeout(() => {
+                 statusMessage.textContent = '';
+                 statusMessage.className = 'mt-8 max-w-4xl mx-auto p-4 rounded-md text-sm text-center';
+            }, 5000);
+        }
+
+        async function populateProjectsDropdowns() {
+            try {
+                const querySnapshot = await getDocs(collection(db, "projects"));
+                projectSelect.innerHTML = '<option value="">-- Select a Project --</option>';
+                taskProjectSelect.innerHTML = '<option value="">-- Select a Project --</option>';
+                querySnapshot.forEach((doc) => {
+                    const option1 = document.createElement('option');
+                    option1.value = doc.id;
+                    option1.textContent = `${doc.data().projectName} (${doc.id})`;
+                    
+                    const option2 = option1.cloneNode(true);
+
+                    projectSelect.appendChild(option1);
+                    taskProjectSelect.appendChild(option2);
+                });
+            } catch (error) {
+                console.error("Error fetching projects: ", error);
+                showStatus('Could not fetch projects.', 'error');
+            }
+        }
+
+        function populateDepartmentsDropdown() {
+            Object.keys(departments).forEach(deptName => {
+                const option = document.createElement('option');
+                option.value = deptName;
+                option.textContent = deptName;
+                departmentSelect.appendChild(option);
+            });
+        }
+        
+        async function fetchStaffForDepartment(departmentName) {
+            staffListDiv.innerHTML = '<div class="flex justify-center mt-8"><div class="spinner"></div></div>';
+            try {
+                const employeesRef = collectionGroup(db, 'employees');
+                const q = query(employeesRef, where("departmentName", "==", departmentName));
+                const querySnapshot = await getDocs(q);
+                
+                staffListDiv.innerHTML = '';
+                if (querySnapshot.empty) {
+                     staffListDiv.innerHTML = `<p class="text-center text-gray-500 text-sm">No staff found in this department.</p>`;
+                     return;
+                }
+
+                querySnapshot.forEach(doc => {
+                    const user = doc.data();
+                    const userDiv = document.createElement('div');
+                    userDiv.className = 'flex items-center p-2 bg-white rounded-md border';
+                    userDiv.innerHTML = `
+                        <input type="checkbox" id="${user.uid}" class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                            data-employee-code="${user.employeeCode}"
+                            data-display-name="${user.displayName}"
+                            data-uid="${user.uid}"
+                            data-path="${doc.ref.path}">
+                        <label for="${user.uid}" class="ml-3 text-sm font-medium text-gray-700">${user.displayName} (${user.employeeCode})</label>
+                    `;
+                    staffListDiv.appendChild(userDiv);
+                });
+
+            } catch (error) {
+                console.error("Error fetching staff:", error);
+                showStatus(`Error fetching staff. You may need to create a Firestore index.`, 'error');
+                staffListDiv.innerHTML = `<p class="text-center text-red-500 text-sm">Error loading staff.</p>`;
+            }
+        }
+
+        function displayTasks(tasks) {
+            taskListContainer.innerHTML = '';
+            if (tasks.length === 0) {
+                taskListContainer.innerHTML = `<p class="text-center text-gray-500 text-sm">No tasks found for this project. Add one to get started!</p>`;
+                return;
+            }
+            tasks.forEach(task => {
+                const taskCard = document.createElement('div');
+                taskCard.className = 'p-4 border rounded-lg bg-white shadow-sm';
+                const statusColors = {
+                    created: 'bg-blue-100 text-blue-800',
+                    assigned: 'bg-yellow-100 text-yellow-800',
+                    completed: 'bg-green-100 text-green-800',
+                };
+                const assignedToText = task.assignedTo ? `Assigned to: <strong>${task.assignedTo.name} (${task.assignedTo.id})</strong>` : 'Not assigned';
+                
+                let actionButtons = '';
+                if (task.status === 'created') {
+                    actionButtons = `<button data-task-id="${task.id}" class="assign-task-btn text-sm bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600">Assign</button>`;
+                }
+                if (task.status === 'assigned') {
+                     actionButtons = `<button data-task-id="${task.id}" class="complete-task-btn text-sm bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600">Complete</button>`;
+                }
+
+                taskCard.innerHTML = `
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="font-bold text-gray-800">${task.taskName}</p>
+                            <p class="text-sm text-gray-600 mt-1">${task.taskDescription}</p>
+                        </div>
+                        <span class="text-xs font-semibold py-1 px-3 rounded-full ${statusColors[task.status] || 'bg-gray-100'}">${task.status}</span>
+                    </div>
+                    <div class="mt-3 pt-3 border-t text-xs text-gray-500 flex justify-between items-center">
+                        <span>${assignedToText}</span>
+                        <div class="flex gap-2">${actionButtons}</div>
+                    </div>
+                `;
+                taskListContainer.appendChild(taskCard);
+            });
+        }
+
+        // --- Event Listeners ---
+
+        createProjectForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const projectName = document.getElementById('projectName').value;
+            const projectId = document.getElementById('projectId').value;
+            const projectDescription = document.getElementById('projectDescription').value;
+
+            if (!projectName || !projectId) {
+                showStatus('Project Name and ID are required.', 'error');
+                return;
+            }
+
+            showStatus('Creating project...', 'info');
+            try {
+                const projectRef = doc(db, 'projects', projectId);
+                await setDoc(projectRef, {
+                    projectName,
+                    projectId,
+                    projectDescription,
+                    status: 'started', // New field
+                    createdAt: serverTimestamp(),
+                    assignees: []
+                });
+                showStatus(`Project "${projectName}" created successfully!`, 'success');
+                createProjectForm.reset();
+                populateProjectsDropdowns(); // Refresh the dropdowns
+            } catch (error) {
+                console.error("Error creating project: ", error);
+                showStatus(`Error: ${error.message}`, 'error');
+            }
+        });
+
+        departmentSelect.addEventListener('change', () => {
+            const selectedDept = departmentSelect.value;
+            if (selectedDept) {
+                fetchStaffForDepartment(selectedDept);
+            } else {
+                staffListDiv.innerHTML = '<p class="text-center text-gray-500 text-sm">Please select a department to see staff.</p>';
+            }
+        });
+        
+        assignStaffForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const projectId = projectSelect.value;
+            const selectedStaffCheckboxes = staffListDiv.querySelectorAll('input[type="checkbox"]:checked');
+
+            if (!projectId) { showStatus('Please select a project.', 'error'); return; }
+            if (selectedStaffCheckboxes.length === 0) { showStatus('Please select at least one staff member to assign.', 'error'); return; }
+
+            showStatus(`Assigning ${selectedStaffCheckboxes.length} staff member(s)...`, 'info');
+            const projectRef = doc(db, 'projects', projectId);
+            const updatePromises = [];
+
+            selectedStaffCheckboxes.forEach(checkbox => {
+                const assigneeData = {
+                    employeeCode: checkbox.dataset.employeeCode,
+                    displayName: checkbox.dataset.displayName,
+                    uid: checkbox.dataset.uid,
+                    firestorePath: checkbox.dataset.path
+                };
+                updatePromises.push(updateDoc(projectRef, { assignees: arrayUnion(assigneeData) }));
+                const staffRef = doc(db, checkbox.dataset.path);
+                updatePromises.push(updateDoc(staffRef, { assignedProjects: arrayUnion(projectId) }));
+            });
+
+            try {
+                await Promise.all(updatePromises);
+                showStatus(`${selectedStaffCheckboxes.length} staff member(s) successfully assigned to project ${projectId}!`, 'success');
+                assignStaffForm.reset();
+                staffListDiv.innerHTML = '<p class="text-center text-gray-500 text-sm">Please select a department to see staff.</p>';
+            } catch (error) {
+                console.error("Error assigning staff: ", error);
+                showStatus(`Error: ${error.message}`, 'error');
+            }
+        });
+
+        taskProjectSelect.addEventListener('change', async () => {
+            const projectId = taskProjectSelect.value;
+            if (currentTaskListener) currentTaskListener(); // Unsubscribe from previous listener
+
+            if (!projectId) {
+                projectDetailsDiv.classList.add('hidden');
+                return;
+            }
+
+            projectDetailsDiv.classList.remove('hidden');
+            const projectRef = doc(db, 'projects', projectId);
+            const projectSnap = await getDoc(projectRef);
+
+            if (projectSnap.exists()) {
+                const projectData = projectSnap.data();
+                projectDetailName.textContent = `${projectData.projectName} (${projectData.projectId})`;
+                projectDetailStatus.textContent = projectData.status;
+                const statusColors = { started: 'bg-yellow-100 text-yellow-800', completed: 'bg-green-100 text-green-800' };
+                projectDetailStatus.className = `text-sm font-semibold py-1 px-3 rounded-full ${statusColors[projectData.status] || 'bg-gray-200'}`;
+                completeProjectBtn.style.display = projectData.status === 'started' ? 'block' : 'none';
+
+                // Listen for real-time task updates
+                const tasksRef = collection(db, 'projects', projectId, 'tasks');
+                currentTaskListener = onSnapshot(tasksRef, (querySnapshot) => {
+                    const tasks = [];
+                    querySnapshot.forEach((doc) => {
+                        tasks.push({ id: doc.id, ...doc.data() });
+                    });
+                    displayTasks(tasks);
+                });
+            }
+        });
+        
+        completeProjectBtn.addEventListener('click', async () => {
+            const projectId = taskProjectSelect.value;
+            if (!projectId) return;
+
+            if (confirm(`Are you sure you want to mark project ${projectId} as completed?`)) {
+                 const projectRef = doc(db, 'projects', projectId);
+                 await updateDoc(projectRef, { status: 'completed' });
+                 showStatus('Project marked as completed!', 'success');
+                 taskProjectSelect.dispatchEvent(new Event('change')); // Refresh view
+            }
+        });
+
+        // Modal Logic
+        const toggleModal = () => {
+            addTaskModal.classList.toggle('opacity-0');
+            addTaskModal.classList.toggle('pointer-events-none');
+            document.body.classList.toggle('modal-active');
+        };
+        addNewTaskBtn.addEventListener('click', toggleModal);
+        addTaskModal.querySelector('.modal-overlay').addEventListener('click', toggleModal);
+        addTaskModal.querySelector('.modal-close').addEventListener('click', toggleModal);
+        addTaskModal.querySelector('.modal-close-btn').addEventListener('click', toggleModal);
+
+        addTaskForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const projectId = taskProjectSelect.value;
+            if (!projectId) { showStatus('No project selected.', 'error'); return; }
+
+            const taskName = document.getElementById('taskName').value;
+            const taskDescription = document.getElementById('taskDescription').value;
+
+            try {
+                const tasksRef = collection(db, 'projects', projectId, 'tasks');
+                await addDoc(tasksRef, {
+                    taskName, taskDescription,
+                    status: 'created',
+                    assignedTo: null,
+                    acknowledgedBy: [],
+                    createdAt: serverTimestamp(),
+                });
+                showStatus('New task added successfully!', 'success');
+                addTaskForm.reset();
+                toggleModal();
+            } catch (error) {
+                showStatus(`Error adding task: ${error.message}`, 'error');
+            }
+        });
+        
+        taskListContainer.addEventListener('click', async (e) => {
+            const projectId = taskProjectSelect.value;
+            if (!projectId) return;
+
+            const taskId = e.target.dataset.taskId;
+            if (!taskId) return;
+            
+            const taskRef = doc(db, 'projects', projectId, 'tasks', taskId);
+
+            if (e.target.classList.contains('assign-task-btn')) {
+                const assignToId = prompt("Enter the Employee ID to assign this task to:", "");
+                const assignToName = prompt("Enter the Employee Name:", "");
+                if (assignToId && assignToName) {
+                    await updateDoc(taskRef, {
+                        status: 'assigned',
+                        assignedTo: { id: assignToId, name: assignToName }
+                    });
+                }
+            } else if (e.target.classList.contains('complete-task-btn')) {
+                 if (confirm('Are you sure you want to mark this task as completed?')) {
+                     await updateDoc(taskRef, { status: 'completed' });
+                 }
+            }
+        });
+
+        // Initializer
+        function initializePanel() {
+            populateProjectsDropdowns();
+            populateDepartmentsDropdown();
+        }
+        initializePanel();
+
+    </script>
+</body>
+</html>
+
