@@ -374,20 +374,18 @@
         }
         
         function initializeForm() {
-            // Populate department dropdowns
             const deptNames = Object.keys(departments);
             populateDropdown(document.getElementById('s_departmentName'), deptNames);
             populateDropdown(document.getElementById('m_departmentName'), deptNames);
             populateDropdown(document.getElementById('searchDepartment'), deptNames);
 
-            // Staff form department/designation logic
             const sDept = document.getElementById('s_departmentName');
             sDept.addEventListener('change', () => {
                 const selectedDept = sDept.value;
                 document.getElementById('s_departmentId').value = selectedDept ? departments[selectedDept] : '';
                 populateDropdown(document.getElementById('s_designation'), designationsByDept[selectedDept] || [], true);
             });
-            // Manager form department logic
+            
              const mDept = document.getElementById('m_departmentName');
             mDept.addEventListener('change', () => {
                 const selectedDept = mDept.value;
@@ -399,7 +397,7 @@
                 staffSearchFilters.style.display = searchRoleSelect.value === 'staffs' ? 'block' : 'none';
             });
             updateFormForRole();
-            staffSearchFilters.style.display = 'block'; // Default view
+            staffSearchFilters.style.display = 'block';
         }
         initializeForm();
 
@@ -439,7 +437,6 @@
                 lastLoginAt: null
             };
 
-            // Build user object based on role
             switch (role) {
                 case 'staff':
                     newUser = { ...commonData, role: 'staff', roles: ['staff'],
@@ -499,9 +496,6 @@
             }
 
             try {
-                // IMPORTANT: Client-side user creation signs in the new user.
-                // A real-world super-admin panel should use a backend with the Admin SDK
-                // to avoid this behavior and to manage sessions properly.
                 const userCredential = await createUserWithEmailAndPassword(auth, email, password);
                 newUser.uid = userCredential.user.uid;
 
@@ -517,45 +511,34 @@
                             showStatus('Department and Designation are required for path.', 'error');
                             return;
                         }
-                        // Create intermediate department document
                         const deptDocRef = doc(db, 'users', `${role}s`, 'departments', dept);
                         await setDoc(deptDocRef, { createdAt: serverTimestamp() }, { merge: true });
-                        // Create intermediate designation document
                         const desigDocRef = doc(db, 'users', `${role}s`, 'departments', dept, 'designations', desig);
                         await setDoc(desigDocRef, { createdAt: serverTimestamp() }, { merge: true });
-                        // Set user document
                         userDocRef = doc(db, 'users', `${role}s`, 'departments', dept, 'designations', desig, 'employees', employeeCode);
                         break;
                     case 'director':
                         const sector = newUser.sector;
                         const dirDesig = newUser.designation;
                         if (!sector || !dirDesig) {
-                            showStatus('Sector and Designation are required for path.', 'error');
-                            return;
+                            showStatus('Sector and Designation are required for path.', 'error'); return;
                         }
-                        // Create intermediate sector document
                         const sectorDocRef = doc(db, 'users', 'directors', 'sectors', sector);
                         await setDoc(sectorDocRef, { createdAt: serverTimestamp() }, { merge: true });
-                        // Create intermediate designation document
                         const dirDesigDocRef = doc(db, 'users', 'directors', 'sectors', sector, 'designations', dirDesig);
                         await setDoc(dirDesigDocRef, { createdAt: serverTimestamp() }, { merge: true });
-                        // Set user document
                         userDocRef = doc(db, 'users', 'directors', 'sectors', sector, 'designations', dirDesig, 'employees', employeeCode);
                         break;
                     case 'executive':
-                        const scope = newUser.domainScope?.[0]; // Use the first scope for the path
+                        const scope = newUser.domainScope?.[0];
                         const execDesig = newUser.designation;
                         if (!scope || !execDesig) {
-                             showStatus('Domain Scope and Designation are required for path.', 'error');
-                            return;
+                             showStatus('Domain Scope and Designation are required for path.', 'error'); return;
                         }
-                        // Create intermediate scope document
                         const scopeDocRef = doc(db, 'users', 'executives', 'scopes', scope);
                         await setDoc(scopeDocRef, { createdAt: serverTimestamp() }, { merge: true });
-                        // Create intermediate designation document
                         const execDesigDocRef = doc(db, 'users', 'executives', 'scopes', scope, 'designations', execDesig);
                         await setDoc(execDesigDocRef, { createdAt: serverTimestamp() }, { merge: true });
-                        // Set user document
                         userDocRef = doc(db, 'users', 'executives', 'scopes', scope, 'designations', execDesig, 'employees', employeeCode);
                         break;
                 }
@@ -566,13 +549,22 @@
                 }
 
                 await setDoc(userDocRef, newUser);
+
+                // ** NEW LOGIC: Create duplicate flattened record for staff **
+                if (role === 'staff') {
+                    const flattenedStaffRef = doc(db, 'staffs', newUser.uid);
+                    const flattenedStaffData = {
+                        ...newUser,
+                        firestorePath: userDocRef.path 
+                    };
+                    await setDoc(flattenedStaffRef, flattenedStaffData);
+                }
                 
-                // Sign out the newly created user to restore the admin context if one existed.
                 await signOut(auth);
 
                 showStatus(`User ${newUser.displayName} added successfully as ${role}!`, 'success');
                 addUserForm.reset();
-                updateFormForRole(); // Reset form view
+                updateFormForRole();
             } catch (error) {
                 console.error("Error adding user:", error);
                 showStatus(`Error: ${error.message}`, 'error');
@@ -592,10 +584,9 @@
             try {
                 const employeesRef = collectionGroup(db, 'employees');
                 const queryConstraints = [
-                    where("role", "==", roleToSearch.slice(0, -1)) // 'staffs' -> 'staff'
+                    where("role", "==", roleToSearch.slice(0, -1))
                 ];
 
-                // Add department filter if applicable for staff
                 if (departmentFilter && roleToSearch === 'staffs') {
                     queryConstraints.push(where("departmentName", "==", departmentFilter));
                 }
@@ -603,8 +594,6 @@
                 const resultsMap = new Map();
 
                 if (searchTerm) {
-                    // Firestore client SDK doesn't support OR queries on different fields.
-                    // We run separate queries and merge the results client-side.
                     const codeQuery = query(employeesRef, ...queryConstraints, where("employeeCode", "==", searchTerm));
                     const firstNameQuery = query(employeesRef, ...queryConstraints, where("firstName", "==", searchTerm));
                     const lastNameQuery = query(employeesRef, ...queryConstraints, where("lastName", "==", searchTerm));
@@ -613,16 +602,15 @@
                         getDocs(codeQuery), getDocs(firstNameQuery), getDocs(lastNameQuery)
                     ]);
 
-                    codeSnap.forEach(doc => resultsMap.set(doc.id, doc.data()));
-                    firstNameSnap.forEach(doc => resultsMap.set(doc.id, doc.data()));
-                    lastNameSnap.forEach(doc => resultsMap.set(doc.id, doc.data()));
+                    codeSnap.forEach(doc => resultsMap.set(doc.id, { ...doc.data(), firestorePath: doc.ref.path }));
+                    firstNameSnap.forEach(doc => resultsMap.set(doc.id, { ...doc.data(), firestorePath: doc.ref.path }));
+                    lastNameSnap.forEach(doc => resultsMap.set(doc.id, { ...doc.data(), firestorePath: doc.ref.path }));
 
                 } else {
-                    // If no search term, just search with the active filters (role, department)
                     const finalQuery = query(employeesRef, ...queryConstraints);
                     const querySnapshot = await getDocs(finalQuery);
                     querySnapshot.forEach(doc => {
-                        resultsMap.set(doc.id, doc.data());
+                        resultsMap.set(doc.id, { ...doc.data(), firestorePath: doc.ref.path });
                     });
                 }
 
@@ -654,7 +642,17 @@
 
        function displayUserDetails(user) {
             let content = '';
+            // Add firestorePath to the top of the details view if it exists
+            if (user.firestorePath) {
+                 content += `<div class="grid grid-cols-3 gap-2 border-b last:border-b-0 py-2">
+                                <strong class="font-medium text-gray-600 col-span-1">Firestore Path</strong>
+                                <div class="text-gray-800 col-span-2 break-all text-xs bg-gray-100 p-1 rounded">${user.firestorePath}</div>
+                            </div>`;
+            }
+
             for (const [key, value] of Object.entries(user)) {
+                if (key === 'firestorePath') continue; // Skip since we added it manually
+
                 let displayValue = value;
                 if (value === null) displayValue = '<em>null</em>';
                 else if (Array.isArray(value)) displayValue = value.join(', ');
@@ -673,3 +671,4 @@
     </script>
 </body>
 </html>
+
